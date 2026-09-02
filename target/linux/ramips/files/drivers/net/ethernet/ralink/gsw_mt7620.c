@@ -37,16 +37,11 @@ u32 mtk_switch_r32(struct mt7620_gsw *gsw, unsigned reg)
 }
 EXPORT_SYMBOL_GPL(mtk_switch_r32);
 
-int mt7620_gsw_config_external_port(struct mt7620_gsw *gsw, int port,
-				    phy_interface_t interface)
+int mt7620_gsw_config_rgmii1(struct mt7620_gsw *gsw, phy_interface_t interface)
 {
 	u32 mode, val;
 	u32 delay_mask = GSW_REG_GPCx_TXDELAY | GSW_REG_GPCx_RXDELAY;
 	u32 delay_val = 0;
-
-	/* Port 5 is the external MAC exposed through RGMII1 on MT7620. */
-	if (port != 5)
-		return -EINVAL;
 
 	switch (interface) {
 	case PHY_INTERFACE_MODE_RGMII:
@@ -94,7 +89,7 @@ int mt7620_gsw_config_external_port(struct mt7620_gsw *gsw, int port,
 
 	return 0;
 }
-EXPORT_SYMBOL_GPL(mt7620_gsw_config_external_port);
+EXPORT_SYMBOL_GPL(mt7620_gsw_config_rgmii1);
 
 static irqreturn_t gsw_interrupt_mt7620(int irq, void *_priv)
 {

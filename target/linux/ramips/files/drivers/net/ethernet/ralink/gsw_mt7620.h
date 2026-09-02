@@ -109,6 +109,8 @@ enum {
 	GSW_ATTR_PORT_UNTAG,
 };
 
+#define MT7620_GSW_EXTERNAL_PORT	5
+
 struct mt7620_gsw_vlan {
 	u16 vid;
 	u8 members;
@@ -137,6 +139,7 @@ struct mt7620_gsw {
 	struct mt7620_gsw_vlan	vlans[GSW_NUM_VLANS];
 	struct delayed_work	mib_work;
 	unsigned long		mib_active_ports;
+	unsigned long		mib_gige_ports;
 	u8			mib_port_intervals;
 	/* Protects the software-extended MIB counter state. */
 	spinlock_t		mib_lock;
@@ -148,8 +151,7 @@ struct mt7620_gsw {
 
 void mtk_switch_w32(struct mt7620_gsw *gsw, u32 val, unsigned reg);
 u32 mtk_switch_r32(struct mt7620_gsw *gsw, unsigned reg);
-int mt7620_gsw_config_external_port(struct mt7620_gsw *gsw, int port,
-				    phy_interface_t interface);
+int mt7620_gsw_config_rgmii1(struct mt7620_gsw *gsw, phy_interface_t interface);
 int mtk_gsw_init(struct fe_priv *priv);
 #if IS_ENABLED(CONFIG_NET_DSA_MT7620)
 int mt7620_gsw_dsa_device_register(struct mt7620_gsw *gsw,
