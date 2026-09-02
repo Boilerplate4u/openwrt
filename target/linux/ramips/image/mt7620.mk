@@ -222,7 +222,7 @@ define Device/dlink_dap-1620-a2
   IMAGE_SIZE := 7872k
   DEVICE_VARIANT := A2
   SOC := mt7620a
-  DEVICE_PACKAGES := kmod-mt76x2 kmod-phy-realtek rssileds
+  DEVICE_PACKAGES := kmod-mt76x2 kmod-phy-realtek rssileds kmod-dsa-mt7620 -swconfig
 endef
 TARGET_DEVICES += dlink_dap-1620-a2
 

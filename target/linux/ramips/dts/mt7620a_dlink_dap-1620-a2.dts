@@ -164,26 +164,41 @@
 	nvmem-cells = <&macaddr_factory_ffe8 0>;
 	nvmem-cell-names = "mac-address";
 
-	mediatek,portmap = "wllll";
-
-	port@5 {
-		status = "okay";
-		phy-handle = <&phy1>;
-		phy-mode = "rgmii";
-	};
-
 	mdio-bus {
 		status = "okay";
 
 		phy1: ethernet-phy@1 {
 			reg = <1>;
-			phy-mode = "rgmii";
 		};
 	};
 };
 
 &gsw {
 	mediatek,ephy-base = /bits/ 8 <12>;
+
+	ports {
+		#address-cells = <1>;
+		#size-cells = <0>;
+
+		port@5 {
+			reg = <5>;
+			label = "lan";
+			phy-handle = <&phy1>;
+			phy-mode = "rgmii-id";
+		};
+
+		port@6 {
+			reg = <6>;
+			ethernet = <&ethernet>;
+			phy-mode = "rgmii";
+
+			fixed-link {
+				speed = <1000>;
+				full-duplex;
+				pause;
+			};
+		};
+	};
 };
 
 &wmac {
