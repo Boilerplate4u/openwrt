@@ -13,6 +13,7 @@
  */
 
 #include <linux/mutex.h>
+#include <linux/phy.h>
 #include <linux/reset.h>
 #include <linux/workqueue.h>
 
@@ -147,6 +148,8 @@ struct mt7620_gsw {
 
 void mtk_switch_w32(struct mt7620_gsw *gsw, u32 val, unsigned reg);
 u32 mtk_switch_r32(struct mt7620_gsw *gsw, unsigned reg);
+int mt7620_gsw_config_external_port(struct mt7620_gsw *gsw, int port,
+				    phy_interface_t interface);
 int mtk_gsw_init(struct fe_priv *priv);
 #if IS_ENABLED(CONFIG_NET_DSA_MT7620)
 int mt7620_gsw_dsa_device_register(struct mt7620_gsw *gsw,
