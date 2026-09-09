@@ -1,7 +1,7 @@
 # Policy thresholds in dBm, not recovered stock firmware values.
 config leds 'main'
 	option mode 'auto'
-	option ethernet 'lan'
+	option ethernet 'eth0'
 	# For multiple enabled STA sections, select one explicitly:
 	# option station 'uplink'
 	option fair '-75'
