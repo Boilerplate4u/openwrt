@@ -1,0 +1,72 @@
+From: Carlo Szelinsky <github@szelinsky.de>
+
+"net: phy: own phydev->psec via PSE notifier and remove fwnode_mdio
+hook" deferred the final pse_control_put() of phydev->psec from
+phy_device_remove() to phy_device_release(), so it would run only after
+the PSE_UNREGISTERED notifier walk had dropped its bus-iterator reference
+on the phy. But bus_for_each_dev() only reaches phys still on the
+mdio_bus_type klist: a phy that has been device_del()'d yet is still
+pinned (e.g. by an attached netdev) is invisible to the walk, so
+phy_pse_detach_one() never clears its phydev->psec. Its deferred put then
+runs after pse_controller_unregister() -> pse_release_pis() has freed
+pcdev->pi[], and __pse_control_release() dereferences the freed array:
+use-after-free.
+
+Put phydev->psec back in phy_device_remove(), before device_del(), so
+the detach is synchronous and ordered ahead of the phy leaving the bus;
+it can no longer outlive the PSE controller. "net: phy: use a dedicated
+mutex instead of rtnl for PSE control attach" replaced rtnl with
+pse_phy_lock() for the attach/detach, so this put can take that same lock
+without the rtnl recursion that originally motivated the deferral, and it
+serialises against the notifier walk: whichever runs first clears
+phydev->psec, the other sees NULL.
+
+Suggested-by: Paolo Abeni <pabeni@redhat.com>
+Link: https://lore.kernel.org/netdev/20260703071025.100797-1-pabeni@redhat.com/
+Signed-off-by: Carlo Szelinsky <github@szelinsky.de>
+---
+ drivers/net/phy/phy_device.c | 23 +++++++++++------------
+ 1 file changed, 11 insertions(+), 12 deletions(-)
+
+diff --git a/drivers/net/phy/phy_device.c b/drivers/net/phy/phy_device.c
+index e8d894bbfa7a..bb120045c406 100644
+--- a/drivers/net/phy/phy_device.c
++++ b/drivers/net/phy/phy_device.c
+@@ -223,19 +223,8 @@ static void phy_mdio_device_free(struct mdio_device *mdiodev)
+ 
+ static void phy_device_release(struct device *dev)
+ {
+-	struct phy_device *phydev = to_phy_device(dev);
+-
+-	/* bus_for_each_dev() holds get_device() across each iteration
+-	 * step, deferring this release callback until any in-flight PSE
+-	 * notifier walk has advanced past this phy. pse_control_put()
+-	 * takes pse_list_mutex, so this path must run in sleepable
+-	 * context.
+-	 */
+-	might_sleep();
+-	pse_control_put(phydev->psec);
+-
+ 	fwnode_handle_put(dev->fwnode);
+-	kfree(phydev);
++	kfree(to_phy_device(dev));
+ }
+ 
+ static void phy_mdio_device_remove(struct mdio_device *mdiodev)
+@@ -1265,6 +1254,16 @@ EXPORT_SYMBOL(phy_device_register);
+ void phy_device_remove(struct phy_device *phydev)
+ {
+ 	unregister_mii_timestamper(phydev->mii_ts);
++
++	/* Detach synchronously, before the phy leaves the bus, so the put cannot
++	 * outlive the PSE controller (an off-bus but still-pinned phy is missed by
++	 * the PSE_UNREGISTERED walk). pse_phy_lock() serialises against that walk.
++	 */
++	pse_phy_lock();
++	pse_control_put(phydev->psec);
++	phydev->psec = NULL;
++	pse_phy_unlock();
++
+ 	device_del(&phydev->mdio.dev);
+ 
+ 	/* Assert the reset signal */
